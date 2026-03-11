@@ -33,6 +33,8 @@ func NewClient(ctx context.Context) (*Client, error) {
 		return nil, fmt.Errorf("failed to initialize Google AI model: %w", err)
 	}
 
+	slog.Info("LLM Client initialized", "model", "gemini-1.5-flash-latest")
+
 	return &Client{
 		model: model,
 	}, nil
