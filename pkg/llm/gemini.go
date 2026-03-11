@@ -27,7 +27,7 @@ func NewClient(ctx context.Context) (*Client, error) {
 	model, err := googleai.New(
 		ctx,
 		googleai.WithAPIKey(apiKey),
-		googleai.WithDefaultModel("gemini-1.5-flash"),
+		googleai.WithDefaultModel("gemini-1.5-flash-latest"),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize Google AI model: %w", err)
