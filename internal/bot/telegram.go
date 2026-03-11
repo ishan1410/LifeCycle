@@ -70,7 +70,7 @@ func (b *TelegramBot) handleMessage(ctx context.Context, msg *tgbotapi.Message) 
 	// Execute the Orchestrator Graph
 	if err := b.graph.Run(ctx, ticket); err != nil {
 		slog.Error("Graph execution failed", "error", err, "chat_id", chatIDStr)
-		b.SendMessage(msg.Chat.ID, "I'm sorry, I encountered an internal error while processing your request.")
+		b.SendMessage(msg.Chat.ID, fmt.Sprintf("I'm sorry, I encountered an internal error:\n\n%s", err.Error()))
 		return
 	}
 
