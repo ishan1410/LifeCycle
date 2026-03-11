@@ -16,7 +16,7 @@ RUN go mod download
 COPY . .
 
 # Build the application statically linked
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o orchestrator ./cmd/server/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o orchestrator ./cmd/bot/main.go
 
 # Stage 2: Create a minimal runner container using scratch
 FROM scratch
