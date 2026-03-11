@@ -17,7 +17,7 @@ type Client struct {
 	model *googleai.GoogleAI
 }
 
-// NewClient initializes a new Gemini 2.5 Flash client.
+// NewClient initializes a new Gemini 1.5 Flash client.
 func NewClient(ctx context.Context) (*Client, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
@@ -27,7 +27,7 @@ func NewClient(ctx context.Context) (*Client, error) {
 	model, err := googleai.New(
 		ctx,
 		googleai.WithAPIKey(apiKey),
-		googleai.WithDefaultModel("gemini-2.5-flash"),
+		googleai.WithDefaultModel("gemini-1.5-flash"),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize Google AI model: %w", err)
@@ -38,11 +38,11 @@ func NewClient(ctx context.Context) (*Client, error) {
 	}, nil
 }
 
-// GenerateContent generates a response using Gemini 2.5 Flash.
+// GenerateContent generates a response using Gemini 1.5 Flash.
 // It wraps the call with a timeout and a simple retry logic to handle 429 rate limits.
 func (c *Client) GenerateContent(ctx context.Context, messages []llms.MessageContent, opts ...llms.CallOption) (*llms.ContentResponse, error) {
-	maxRetries := 3
-	baseWait := 2 * time.Second
+	maxRetries := 2
+	baseWait := 5 * time.Second
 
 	for i := 0; i < maxRetries; i++ {
 		// Enforce a hard timeout for each API attempt
