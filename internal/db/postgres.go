@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
 type ReminderJob struct {
@@ -20,8 +20,8 @@ type Database struct {
 	db *sql.DB
 }
 
-func NewDatabase(dbPath string) (*Database, error) {
-	db, err := sql.Open("sqlite3", dbPath)
+func NewDatabase(dbUrl string) (*Database, error) {
+	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -41,8 +41,8 @@ func NewDatabase(dbPath string) (*Database, error) {
 func (d *Database) initTables() error {
 	query := `
 	CREATE TABLE IF NOT EXISTS reminders (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		target_time DATETIME NOT NULL,
+		id SERIAL PRIMARY KEY,
+		target_time TIMESTAMP WITH TIME ZONE NOT NULL,
 		reminder_text TEXT NOT NULL,
 		status TEXT DEFAULT 'pending'
 	);`
@@ -51,17 +51,18 @@ func (d *Database) initTables() error {
 }
 
 func (d *Database) SaveReminder(targetTime time.Time, text string) (int, error) {
-	query := `INSERT INTO reminders (target_time, reminder_text, status) VALUES (?, ?, 'pending')`
-	res, err := d.db.Exec(query, targetTime, text)
+	query := `INSERT INTO reminders (target_time, reminder_text, status) VALUES ($1, $2, 'pending') RETURNING id`
+	
+	var id int
+	err := d.db.QueryRow(query, targetTime, text).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
-	id, err := res.LastInsertId()
-	return int(id), err
+	return id, nil
 }
 
 func (d *Database) GetDueReminders() ([]ReminderJob, error) {
-	query := `SELECT id, target_time, reminder_text, status FROM reminders WHERE status = 'pending' AND target_time <= ?`
+	query := `SELECT id, target_time, reminder_text, status FROM reminders WHERE status = 'pending' AND target_time <= $1`
 	rows, err := d.db.Query(query, time.Now().UTC())
 	if err != nil {
 		return nil, err
@@ -88,12 +89,12 @@ func (d *Database) GetDueReminders() ([]ReminderJob, error) {
 }
 
 func (d *Database) MarkCompleted(id int) error {
-	_, err := d.db.Exec(`UPDATE reminders SET status = 'completed' WHERE id = ?`, id)
+	_, err := d.db.Exec(`UPDATE reminders SET status = 'completed' WHERE id = $1`, id)
 	return err
 }
 
 func (d *Database) MarkCancelled(id int) error {
-	_, err := d.db.Exec(`UPDATE reminders SET status = 'cancelled' WHERE id = ?`, id)
+	_, err := d.db.Exec(`UPDATE reminders SET status = 'cancelled' WHERE id = $1`, id)
 	return err
 }
 
@@ -122,7 +123,7 @@ func (d *Database) GetAllPendingReminders() ([]ReminderJob, error) {
 }
 
 func (d *Database) UpdateReminderTime(id int, newTime time.Time) error {
-	_, err := d.db.Exec(`UPDATE reminders SET target_time = ? WHERE id = ?`, newTime, id)
+	_, err := d.db.Exec(`UPDATE reminders SET target_time = $1 WHERE id = $2`, newTime, id)
 	return err
 }
 

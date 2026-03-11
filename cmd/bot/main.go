@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -60,8 +61,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize Database in the new data/ directory
-	database, err := db.NewDatabase("data/reminders.db")
+	// Initialize Database in the cloud
+	dbUrl := os.Getenv("DATABASE_URL")
+	if dbUrl == "" {
+		slog.Error("DATABASE_URL must be set")
+		os.Exit(1)
+	}
+	database, err := db.NewDatabase(dbUrl)
 	if err != nil {
 		slog.Error("Failed to initialize database", "error", err)
 		os.Exit(1)
@@ -92,6 +98,22 @@ func main() {
 	go func() {
 		if err := telegramBot.StartPolling(ctx); err != nil {
 			slog.Error("Polling stopped", "error", err)
+		}
+	}()
+
+	// Cloud Run Health Checks: Listen on PORT
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	go func() {
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("LifeCycle Bot Active"))
+		})
+		slog.Info("Starting HTTP health server on port " + port)
+		if err := http.ListenAndServe(":"+port, nil); err != nil {
+			slog.Error("HTTP server failed", "error", err)
 		}
 	}()
 

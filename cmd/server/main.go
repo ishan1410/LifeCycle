@@ -41,9 +41,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	database, err := db.NewDatabase(":memory:") // In memory DB for the test simulation
+	// Initialize Database in the cloud
+	dbUrl := os.Getenv("DATABASE_URL")
+	if dbUrl == "" {
+		slog.Error("DATABASE_URL must be set")
+		os.Exit(1)
+	}
+	database, err := db.NewDatabase(dbUrl)
 	if err != nil {
-		slog.Error("Failed to initialize test DB", "error", err)
+		slog.Error("Failed to initialize database", "error", err)
 		os.Exit(1)
 	}
 	defer database.Close()
