@@ -101,27 +101,29 @@ func main() {
 		}
 	}()
 
-	// Cloud Run Health Checks: Listen on PORT
+	// Wait for interrupt signal to gracefully shutdown the server
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		<-quit
+		slog.Info("Shutting down bot gracefully...")
+		cancel() // Cancels the context, stopping the long-polling
+		os.Exit(0)
+	}()
+
+	// Cloud Run Health Checks: Listen on PORT (Blocking)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	go func() {
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("LifeCycle Bot Active"))
-		})
-		slog.Info("Starting HTTP health server on port " + port)
-		if err := http.ListenAndServe(":"+port, nil); err != nil {
-			slog.Error("HTTP server failed", "error", err)
-		}
-	}()
 
-	// Wait for interrupt signal to gracefully shutdown the server
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("LifeCycle Bot Active"))
+	})
 
-	slog.Info("Shutting down bot gracefully...")
-	cancel() // Cancels the context, stopping the long-polling
+	slog.Info("Starting HTTP health server on port " + port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		slog.Error("HTTP server failed", "error", err)
+	}
 }

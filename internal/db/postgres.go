@@ -52,7 +52,7 @@ func (d *Database) initTables() error {
 
 func (d *Database) SaveReminder(targetTime time.Time, text string) (int, error) {
 	query := `INSERT INTO reminders (target_time, reminder_text, status) VALUES ($1, $2, 'pending') RETURNING id`
-	
+
 	var id int
 	err := d.db.QueryRow(query, targetTime, text).Scan(&id)
 	if err != nil {
