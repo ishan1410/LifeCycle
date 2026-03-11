@@ -1,0 +1,34 @@
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Environment Variables
+.env
+.env.local
+
+# IDE Specifics
+.ide/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database and Data Files
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Dependency Directories
+vendor/
+node_modules/
+
+# OS Specific
+.DS_Store
+Thumbs.db

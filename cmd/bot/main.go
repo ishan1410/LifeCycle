@@ -1,0 +1,105 @@
+package main
+
+import (
+	"context"
+	"log/slog"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
+
+	"github.com/ishanpatel/multi-agent-orchestrator/internal/agents"
+	"github.com/ishanpatel/multi-agent-orchestrator/internal/bot"
+	"github.com/ishanpatel/multi-agent-orchestrator/internal/db"
+	"github.com/ishanpatel/multi-agent-orchestrator/pkg/llm"
+	"github.com/joho/godotenv"
+)
+
+func main() {
+	// Configure slog to show text format at Info level
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
+
+	slog.Info("Initializing Telegram Multi-Agent Support Bot")
+
+	// Load .env file
+	_ = godotenv.Load()
+
+	if os.Getenv("GEMINI_API_KEY") == "" {
+		slog.Error("GEMINI_API_KEY environment variable is required")
+		os.Exit(1)
+	}
+
+	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+	if botToken == "" {
+		slog.Error("TELEGRAM_BOT_TOKEN environment variable is required")
+		os.Exit(1)
+	}
+
+	adminChatIDStr := os.Getenv("ADMIN_CHAT_ID")
+	if adminChatIDStr == "" {
+		slog.Error("ADMIN_CHAT_ID environment variable is required")
+		os.Exit(1)
+	}
+	adminChatID, err := strconv.ParseInt(adminChatIDStr, 10, 64)
+	if err != nil {
+		slog.Error("Invalid ADMIN_CHAT_ID format", "error", err)
+		os.Exit(1)
+	}
+
+	// Create root context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Initialize the LLM client wrapper
+	client, err := llm.NewClient(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize LLM client", "error", err)
+		os.Exit(1)
+	}
+
+	// Initialize Database in the new data/ directory
+	database, err := db.NewDatabase("data/reminders.db")
+	if err != nil {
+		slog.Error("Failed to initialize database", "error", err)
+		os.Exit(1)
+	}
+	defer database.Close()
+
+	// Initialize Agent Dependencies
+	supervisor := agents.NewSupervisorAgent(client)
+	echoWorker := agents.NewEchoAgent()
+	reminderWorker := agents.NewReminderAgent(client, database)
+	modifyReminderWorker := agents.NewModifyReminderAgent(client, database)
+
+	// Combine into the graph orchestrator
+	graph := agents.NewGraphOrchestrator(supervisor, echoWorker, reminderWorker, modifyReminderWorker)
+
+	// Initialize the Telegram Bot
+	telegramBot, err := bot.NewTelegramBot(botToken, graph)
+	if err != nil {
+		slog.Error("Failed to initialize Telegram Bot", "error", err)
+		os.Exit(1)
+	}
+
+	// Initialize and start the Cron background processor
+	cron := bot.NewCronProcessor(database, telegramBot, adminChatID)
+	go cron.Start(ctx)
+
+	// Run bot polling in a goroutine
+	go func() {
+		if err := telegramBot.StartPolling(ctx); err != nil {
+			slog.Error("Polling stopped", "error", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("Shutting down bot gracefully...")
+	cancel() // Cancels the context, stopping the long-polling
+}
