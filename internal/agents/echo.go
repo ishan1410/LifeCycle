@@ -36,7 +36,7 @@ func (a *EchoAgent) Execute(ctx context.Context, ticket *state.TicketState) erro
 
 	// Tell the orchestrator we are done resolving this task
 	ticket.UpdateStatus(state.StatusResolved)
-	
+
 	// Add the assistant response to the conversation history
 	ticket.AddMessage("assistant", echoText)
 

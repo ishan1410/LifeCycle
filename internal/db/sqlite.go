@@ -76,12 +76,12 @@ func (d *Database) GetDueReminders() ([]ReminderJob, error) {
 			slog.Error("Failed to scan reminder row", "error", err)
 			continue
 		}
-		
+
 		t, err := time.Parse(time.RFC3339, targetTime)
 		if err == nil {
 			j.TargetTime = t
 		}
-		
+
 		jobs = append(jobs, j)
 	}
 	return jobs, nil
@@ -100,7 +100,7 @@ func (d *Database) MarkCancelled(id int) error {
 // GetAllPendingReminders returns all active reminders so the LLM can choose the correct one from a list.
 func (d *Database) GetAllPendingReminders() ([]ReminderJob, error) {
 	query := `SELECT id, target_time, reminder_text, status FROM reminders WHERE status = 'pending' ORDER BY target_time ASC LIMIT 20`
-	
+
 	rows, err := d.db.Query(query)
 	if err != nil {
 		return nil, err

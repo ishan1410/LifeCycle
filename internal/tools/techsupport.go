@@ -10,9 +10,9 @@ import (
 func CheckServerStatus(ctx context.Context, serverID string) (string, error) {
 	// Mock implementation
 	status := map[string]interface{}{
-		"server_id": serverID,
-		"status":    "down", // Simulating the down server
-		"uptime":    "0s",
+		"server_id":  serverID,
+		"status":     "down", // Simulating the down server
+		"uptime":     "0s",
 		"last_error": "network interface crash detected",
 	}
 	b, err := json.Marshal(status)

@@ -49,7 +49,7 @@ func (g *GraphOrchestrator) Run(ctx context.Context, ticket *state.TicketState) 
 			if err := g.supervisor.Execute(ctx, ticket); err != nil {
 				return fmt.Errorf("supervisor error: %w", err)
 			}
-		
+
 		case state.StatusRoutedEcho:
 			ticket.CurrentAgent = "EchoWorker"
 			if err := g.echo.Execute(ctx, ticket); err != nil {
@@ -61,7 +61,7 @@ func (g *GraphOrchestrator) Run(ctx context.Context, ticket *state.TicketState) 
 			if err := g.reminder.Execute(ctx, ticket); err != nil {
 				return fmt.Errorf("reminder worker error: %w", err)
 			}
-			
+
 		case state.StatusRoutedModifyReminder:
 			ticket.CurrentAgent = "ModifyReminderWorker"
 			if err := g.modifyReminder.Execute(ctx, ticket); err != nil {

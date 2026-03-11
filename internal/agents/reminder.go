@@ -16,8 +16,8 @@ import (
 
 // ReminderAgent extracts scheduling instructions and queues a background goroutine.
 type ReminderAgent struct {
-	llmClient   *llm.Client
-	db          *db.Database
+	llmClient *llm.Client
+	db        *db.Database
 }
 
 func NewReminderAgent(client *llm.Client, database *db.Database) *ReminderAgent {
@@ -91,7 +91,7 @@ DO NOT include Markdown formatting (like `+"```json"+`), just the raw JSON.`, ti
 	}
 
 	responseMsg := fmt.Sprintf("I've scheduled a reminder for %s. (Job ID: %d)", targetTime.Local().Format("Jan 02, 3:04 PM"), jobID)
-	
+
 	ticket.ResolutionNotes = responseMsg
 	ticket.UpdateStatus(state.StatusResolved)
 	ticket.AddMessage("assistant", responseMsg)

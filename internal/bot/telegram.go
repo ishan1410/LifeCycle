@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/ishanpatel/multi-agent-orchestrator/internal/agents"
 	"github.com/ishanpatel/multi-agent-orchestrator/internal/state"
@@ -63,7 +63,7 @@ func (b *TelegramBot) StartPolling(ctx context.Context) error {
 // handleMessage takes an incoming Telegram message and feeds it to the Orchestrator.
 func (b *TelegramBot) handleMessage(ctx context.Context, msg *tgbotapi.Message) {
 	chatIDStr := fmt.Sprintf("%d", msg.Chat.ID)
-	
+
 	// Create a new TicketState, using the Chat ID as the Ticket ID
 	ticket := state.NewTicketState(chatIDStr, msg.Text)
 
@@ -77,7 +77,7 @@ func (b *TelegramBot) handleMessage(ctx context.Context, msg *tgbotapi.Message) 
 	// The Orchestrator has finished, its response should be in ResolutionNotes
 	// Wait, if it's NEEDS_MORE_INFO, the assistant message is in the history or ResolutionNotes
 	// We'll use the last assistant message, or ResolutionNotes.
-	
+
 	var finalResponse string
 	if ticket.ResolutionNotes != "" {
 		finalResponse = ticket.ResolutionNotes

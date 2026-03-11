@@ -33,7 +33,7 @@ type SupervisorDecision struct {
 func (a *SupervisorAgent) Execute(ctx context.Context, ticket *state.TicketState) error {
 	slog.Info("Supervisor Agent analyzing ticket", "ticket_id", ticket.TicketID)
 
-prompt := `You are the Supervisor Agent for an enterprise support system.
+	prompt := `You are the Supervisor Agent for an enterprise support system.
 Your job is to read the conversation history and decide the next step.
 Available routes:
 - REMINDER: If the user explicitly asks to CREATE a new reminder, alert, or notification about something in the future.
