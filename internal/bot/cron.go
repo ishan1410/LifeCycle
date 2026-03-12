@@ -26,7 +26,7 @@ func NewCronProcessor(database *db.Database, b *TelegramBot, chatID int64) *Cron
 // Start spawns the background polling loop
 func (c *CronProcessor) Start(ctx context.Context) {
 	slog.Info("Starting Cron Processor background loop")
-	ticker := time.NewTicker(10 * time.Second) // Check the DB every 10 seconds
+	ticker := time.NewTicker(2 * time.Second) // Check the DB every 2 seconds for faster response
 
 	for {
 		select {
@@ -48,10 +48,10 @@ func (c *CronProcessor) checkDueJobs() {
 	}
 
 	for _, job := range jobs {
-		slog.Info("Executing Scheduled DB Reminder", "job_id", job.ID, "text", job.ReminderText)
+		slog.Info("Executing Scheduled DB Reminder", "job_id", job.ID, "chat_id", job.ChatID, "text", job.ReminderText)
 
-		// 1. Send the Message to Telegram
-		c.bot.SendMessage(c.adminChatID, "⏰ Reminder: "+job.ReminderText)
+		// 1. Send the Message to the specific user who scheduled it
+		c.bot.SendMessage(job.ChatID, "⏰ Reminder: "+job.ReminderText)
 
 		// 2. Mark as Completed in the DB
 		if err := c.db.MarkCompleted(job.ID); err != nil {
