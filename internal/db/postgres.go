@@ -93,11 +93,11 @@ func (d *Database) MarkCancelled(id int) error {
 	return err
 }
 
-// GetAllPendingReminders returns all active reminders so the LLM can choose the correct one from a list.
-func (d *Database) GetAllPendingReminders() ([]ReminderJob, error) {
-	query := `SELECT id, chat_id, target_time, reminder_text, status FROM reminders WHERE status = 'pending' ORDER BY target_time ASC LIMIT 20`
+// GetPendingRemindersByChatID returns active reminders for a specific user.
+func (d *Database) GetPendingRemindersByChatID(chatID int64) ([]ReminderJob, error) {
+	query := `SELECT id, chat_id, target_time, reminder_text, status FROM reminders WHERE status = 'pending' AND chat_id = $1 ORDER BY target_time ASC LIMIT 20`
 
-	rows, err := d.db.Query(query)
+	rows, err := d.db.Query(query, chatID)
 	if err != nil {
 		return nil, err
 	}

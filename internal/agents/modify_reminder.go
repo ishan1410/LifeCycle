@@ -32,12 +32,15 @@ type ModifyData struct {
 	TargetTime string `json:"target_time"` // The newly requested time (or empty if cancelling)
 	IsCancel   bool   `json:"is_cancel"`   // True if the user wants to delete the alarm
 }
-
 func (a *ModifyReminderAgent) Execute(ctx context.Context, ticket *state.TicketState) error {
 	slog.Info("Modify Reminder Agent analyzing ticket", "ticket_id", ticket.TicketID)
 
-	// 1. Fetch ALL pending reminders first to give the LLM context.
-	jobs, err := a.db.GetAllPendingReminders()
+	// Convert TicketID (which is ChatID) to int64
+	var chatID int64
+	fmt.Sscanf(ticket.TicketID, "%d", &chatID)
+
+	// 1. Fetch only this user's pending reminders for privacy.
+	jobs, err := a.db.GetPendingRemindersByChatID(chatID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch pending reminders: %w", err)
 	}
@@ -138,7 +141,16 @@ Return ONLY a JSON object. DO NOT include Markdown formatting.`, time.Now().UTC(
 			return fmt.Errorf("failed to parse new TargetTime ISO8601: %w", errParse)
 		}
 		err = a.db.UpdateReminderTime(targetJob.ID, newTime)
-		responseMsg = fmt.Sprintf("I have updated your reminder '%s' to %s", targetJob.ReminderText, newTime.Local().Format("Jan 02, 3:04 PM"))
+
+		// Calculate relative time for clarity
+		duration := time.Until(newTime)
+		relativeDesc := ""
+		if duration > 0 {
+			relativeDesc = fmt.Sprintf(" (in %s)", duration.Round(time.Second))
+		}
+
+		responseMsg = fmt.Sprintf("I have updated your reminder '%s' to %s%s", 
+			targetJob.ReminderText, newTime.Format("Jan 02, 3:04 PM UTC"), relativeDesc)
 	}
 
 	if err != nil {
