@@ -75,6 +75,11 @@ func (b *TelegramBot) handleMessage(ctx context.Context, update tgbotapi.Update)
 		return
 	}
 
+	// 2. Start a background "typing" heartbeat to mask latency
+	typingCtx, cancelTyping := context.WithCancel(ctx)
+	defer cancelTyping()
+	go b.indicateTyping(typingCtx, msg.Chat.ID)
+
 	chatIDStr := fmt.Sprintf("%d", msg.Chat.ID)
 
 	// Create a new TicketState, using the Chat ID as the Ticket ID
@@ -86,6 +91,9 @@ func (b *TelegramBot) handleMessage(ctx context.Context, update tgbotapi.Update)
 		b.SendMessage(msg.Chat.ID, fmt.Sprintf("I'm sorry, I encountered an internal error:\n\n%s", err.Error()))
 		return
 	}
+
+	// Stop typing once logic is done
+	cancelTyping()
 
 	// The Orchestrator has finished, its response should be in ResolutionNotes
 	// Wait, if it's NEEDS_MORE_INFO, the assistant message is in the history or ResolutionNotes
@@ -109,6 +117,24 @@ func (b *TelegramBot) handleMessage(ctx context.Context, update tgbotapi.Update)
 	}
 
 	b.SendMessage(msg.Chat.ID, finalResponse)
+}
+
+// indicateTyping sends a "typing..." status to Telegram every 4 seconds until the context is cancelled.
+func (b *TelegramBot) indicateTyping(ctx context.Context, chatID int64) {
+	// Send immediately
+	b.api.Send(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
+
+	ticker := time.NewTicker(4 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			b.api.Send(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
+		}
+	}
 }
 
 // SendMessage allows any part of the application to proactively send a message to a user.
