@@ -64,7 +64,19 @@ func (d *Database) SaveReminder(chatID int64, targetTime time.Time, text string)
 }
 
 func (d *Database) GetDueReminders() ([]ReminderJob, error) {
-	query := `SELECT id, chat_id, target_time, reminder_text, status FROM reminders WHERE status = 'pending' AND target_time <= $1`
+	// Use an atomic UPDATE with FOR UPDATE SKIP LOCKED to prevent duplicate processing by multiple bot instances.
+	// This "claims" the jobs by moving them to 'completed' status immediately, but returns the details for the worker to send the message.
+	query := `
+		UPDATE reminders 
+		SET status = 'completed' 
+		WHERE id IN (
+			SELECT id FROM reminders 
+			WHERE status = 'pending' AND target_time <= $1 
+			ORDER BY target_time ASC 
+			FOR UPDATE SKIP LOCKED
+		)
+		RETURNING id, chat_id, target_time, reminder_text, status;`
+
 	rows, err := d.db.Query(query, time.Now().UTC())
 	if err != nil {
 		return nil, err

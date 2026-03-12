@@ -40,7 +40,7 @@ func NewClient(ctx context.Context) (*Client, error) {
 	}, nil
 }
 
-// GenerateContent generates a response using Gemini 1.5 Flash.
+// GenerateContent generates a response using Gemini.
 // It wraps the call with a timeout and a simple retry logic to handle 429 rate limits.
 func (c *Client) GenerateContent(ctx context.Context, messages []llms.MessageContent, opts ...llms.CallOption) (*llms.ContentResponse, error) {
 	maxRetries := 2

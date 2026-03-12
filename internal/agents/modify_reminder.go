@@ -149,8 +149,12 @@ Return ONLY a JSON object. DO NOT include Markdown formatting.`, time.Now().UTC(
 			relativeDesc = fmt.Sprintf(" (in %s)", duration.Round(time.Second))
 		}
 
-		responseMsg = fmt.Sprintf("I have updated your reminder '%s' to %s%s", 
-			targetJob.ReminderText, newTime.Format("Jan 02, 3:04 PM UTC"), relativeDesc)
+		// Load PDT (America/Los_Angeles) for display
+		loc, _ := time.LoadLocation("America/Los_Angeles")
+		displayTime := newTime.In(loc).Format("Jan 02, 3:04 PM")
+
+		responseMsg = fmt.Sprintf("I have updated your reminder '%s' to %s PT%s", 
+			targetJob.ReminderText, displayTime, relativeDesc)
 	}
 
 	if err != nil {

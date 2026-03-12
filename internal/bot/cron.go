@@ -53,9 +53,7 @@ func (c *CronProcessor) checkDueJobs() {
 		// 1. Send the Message to the specific user who scheduled it
 		c.bot.SendMessage(job.ChatID, "⏰ Reminder: "+job.ReminderText)
 
-		// 2. Mark as Completed in the DB
-		if err := c.db.MarkCompleted(job.ID); err != nil {
-			slog.Error("Failed to mark job as completed in DB", "job_id", job.ID, "error", err)
-		}
+		// NOTE: Status was already marked as 'completed' atomically in GetDueReminders
+		// to prevent duplication by other bot instances.
 	}
 }
