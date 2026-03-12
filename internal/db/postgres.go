@@ -72,15 +72,9 @@ func (d *Database) GetDueReminders() ([]ReminderJob, error) {
 	var jobs []ReminderJob
 	for rows.Next() {
 		var j ReminderJob
-		var targetTime string
-		if err := rows.Scan(&j.ID, &targetTime, &j.ReminderText, &j.Status); err != nil {
+		if err := rows.Scan(&j.ID, &j.TargetTime, &j.ReminderText, &j.Status); err != nil {
 			slog.Error("Failed to scan reminder row", "error", err)
 			continue
-		}
-
-		t, err := time.Parse(time.RFC3339, targetTime)
-		if err == nil {
-			j.TargetTime = t
 		}
 
 		jobs = append(jobs, j)
@@ -111,12 +105,9 @@ func (d *Database) GetAllPendingReminders() ([]ReminderJob, error) {
 	var jobs []ReminderJob
 	for rows.Next() {
 		var j ReminderJob
-		var targetTime string
-		if err := rows.Scan(&j.ID, &targetTime, &j.ReminderText, &j.Status); err != nil {
+		if err := rows.Scan(&j.ID, &j.TargetTime, &j.ReminderText, &j.Status); err != nil {
 			continue
 		}
-		t, _ := time.Parse(time.RFC3339, targetTime)
-		j.TargetTime = t
 		jobs = append(jobs, j)
 	}
 	return jobs, nil

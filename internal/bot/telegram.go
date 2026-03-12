@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/ishanpatel/multi-agent-orchestrator/internal/agents"
@@ -12,8 +14,9 @@ import (
 
 // TelegramBot handles the interaction with the Telegram API.
 type TelegramBot struct {
-	api   *tgbotapi.BotAPI
-	graph *agents.GraphOrchestrator
+	api           *tgbotapi.BotAPI
+	graph         *agents.GraphOrchestrator
+	processedMsgs sync.Map // map[int]time.Time to track and deduplicate updates
 }
 
 // NewTelegramBot initializes a new Telegram bot instance.
@@ -52,16 +55,26 @@ func (b *TelegramBot) StartPolling(ctx context.Context) error {
 				continue
 			}
 
-			slog.Info("Received message", "user", update.Message.From.UserName, "text", update.Message.Text)
-
-			// Process the message asynchronously so we don't block the polling loop
-			go b.handleMessage(ctx, update.Message)
+			slog.Info("Received message", "user", update.Message.From.UserName, "text", update.Message.Text, "update_id", update.UpdateID)
+			go b.handleMessage(ctx, update)
 		}
 	}
 }
 
-// handleMessage takes an incoming Telegram message and feeds it to the Orchestrator.
-func (b *TelegramBot) handleMessage(ctx context.Context, msg *tgbotapi.Message) {
+// handleMessage takes an incoming Telegram update and feeds it to the Orchestrator.
+func (b *TelegramBot) handleMessage(ctx context.Context, update tgbotapi.Update) {
+	msg := update.Message
+	if msg == nil {
+		return
+	}
+
+	// 1. Deduplication: Check if we've already seen this UpdateID recently
+	// This prevents "Bot Wars" in Cloud Run from burning AI quota
+	if _, loaded := b.processedMsgs.LoadOrStore(update.UpdateID, time.Now()); loaded {
+		slog.Warn("Deduplicated message, skipping to prevent redundant AI calls", "update_id", update.UpdateID)
+		return
+	}
+
 	chatIDStr := fmt.Sprintf("%d", msg.Chat.ID)
 
 	// Create a new TicketState, using the Chat ID as the Ticket ID
