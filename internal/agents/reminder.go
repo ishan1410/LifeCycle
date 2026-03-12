@@ -101,11 +101,17 @@ DO NOT include Markdown formatting (like `+"```json"+`), just the raw JSON.`, ti
 	}
 
 	// Load PDT (America/Los_Angeles) for display
-	loc, _ := time.LoadLocation("America/Los_Angeles")
-	displayTime := targetTime.In(loc).Format("Jan 02, 3:04 PM")
+	loc, err := time.LoadLocation("America/Los_Angeles")
+	displayTime := targetTime.Format("Jan 02, 3:04 PM UTC") // Fallback
+	timezoneName := "UTC"
 
-	responseMsg := fmt.Sprintf("I've scheduled a reminder for %s PT%s. (Job ID: %d)", 
-		displayTime, relativeDesc, jobID)
+	if err == nil {
+		displayTime = targetTime.In(loc).Format("Jan 02, 3:04 PM")
+		timezoneName = "PT"
+	}
+
+	responseMsg := fmt.Sprintf("I've scheduled a reminder for %s %s%s. (Job ID: %d)", 
+		displayTime, timezoneName, relativeDesc, jobID)
 
 	ticket.ResolutionNotes = responseMsg
 	ticket.UpdateStatus(state.StatusResolved)

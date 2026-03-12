@@ -150,11 +150,17 @@ Return ONLY a JSON object. DO NOT include Markdown formatting.`, time.Now().UTC(
 		}
 
 		// Load PDT (America/Los_Angeles) for display
-		loc, _ := time.LoadLocation("America/Los_Angeles")
-		displayTime := newTime.In(loc).Format("Jan 02, 3:04 PM")
+		loc, err := time.LoadLocation("America/Los_Angeles")
+		displayTime := newTime.Format("Jan 02, 3:04 PM UTC") // Fallback
+		timezoneName := "UTC"
 
-		responseMsg = fmt.Sprintf("I have updated your reminder '%s' to %s PT%s", 
-			targetJob.ReminderText, displayTime, relativeDesc)
+		if err == nil {
+			displayTime = newTime.In(loc).Format("Jan 02, 3:04 PM")
+			timezoneName = "PT"
+		}
+
+		responseMsg = fmt.Sprintf("I have updated your reminder '%s' to %s %s%s", 
+			targetJob.ReminderText, displayTime, timezoneName, relativeDesc)
 	}
 
 	if err != nil {

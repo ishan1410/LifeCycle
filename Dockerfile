@@ -24,6 +24,10 @@ FROM scratch
 # Import certs so HTTPS works (needed for external API calls to Gemini)
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
+# Import timezone data so time.LoadLocation works in scratch
+COPY --from=builder /usr/local/go/lib/time/zoneinfo.zip /zoneinfo.zip
+ENV ZONEINFO=/zoneinfo.zip
+
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/orchestrator /app/orchestrator
 
