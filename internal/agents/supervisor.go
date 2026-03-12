@@ -33,6 +33,26 @@ type SupervisorDecision struct {
 func (a *SupervisorAgent) Execute(ctx context.Context, ticket *state.TicketState) error {
 	slog.Info("Supervisor Agent analyzing ticket", "ticket_id", ticket.TicketID)
 
+	// --- FAST PATH: Simple Keyword Interceptor ---
+	// To minimize API calls and remain under free tier, we handle basic commands locally.
+	lastMsg := ""
+	if len(ticket.ConversationHistory) > 0 {
+		lastMsg = strings.ToLower(strings.TrimSpace(ticket.ConversationHistory[len(ticket.ConversationHistory)-1].Content))
+	}
+
+	switch lastMsg {
+	case "/help", "help", "/start":
+		ticket.UpdateStatus(state.StatusNeedsMoreInfo)
+		ticket.AddMessage("assistant", "I am your LifeCycle assistant. I can help you:\n1. **Set reminders** (e.g., 'remind me to call mom in 2 hours')\n2. **Modify reminders** (e.g., 'cancel my water reminder')\n3. **Chat** (just send me a message!)")
+		slog.Info("Fast-path triggered: help", "ticket_id", ticket.TicketID)
+		return nil
+	case "/ping", "ping":
+		ticket.UpdateStatus(state.StatusResolved)
+		ticket.ResolutionNotes = "Pong! 🏓"
+		slog.Info("Fast-path triggered: ping", "ticket_id", ticket.TicketID)
+		return nil
+	}
+
 	prompt := `You are the Supervisor Agent for an enterprise support system.
 Your job is to read the conversation history and decide the next step.
 Available routes:
