@@ -26,8 +26,8 @@ func main() {
 	// Load .env file if it exists
 	_ = godotenv.Load()
 
-	if os.Getenv("GEMINI_API_KEY") == "" {
-		slog.Error("GEMINI_API_KEY environment variable is required")
+	if os.Getenv("OPENAI_API_KEY") == "" {
+		slog.Error("OPENAI_API_KEY environment variable is required")
 		os.Exit(1)
 	}
 

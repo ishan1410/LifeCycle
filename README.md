@@ -1,6 +1,6 @@
 # Autonomous Lifecycle Orchestrator
 
-A sophisticated, Go-based multi-agent architecture designed to function as an autonomous personal assistant via Telegram. Powered by Google's Gemini 2.5 Flash, the system utilizes a supervisor-worker pattern to dynamically route natural language requests to specialized AI agents.
+A sophisticated, Go-based multi-agent architecture designed to function as an autonomous personal assistant via Telegram. Powered by OpenAI's GPT-4o-mini, the system utilizes a supervisor-worker pattern to dynamically route natural language requests to specialized AI agents.
 
 ## System Architecture
 
@@ -48,7 +48,7 @@ graph TD
 ### Prerequisites
 *   Go 1.22+
 *   A Telegram Bot Token (via BotFather)
-*   A Google Gemini API Key
+*   An OpenAI API Key
 *   Your personal Telegram Chat ID
 
 ### Environment Configuration
@@ -60,7 +60,7 @@ cp .env.example .env
 
 Ensure the `.env` file contains:
 ```env
-GEMINI_API_KEY=your_gemini_api_key
+OPENAI_API_KEY=your_openai_api_key
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 ADMIN_CHAT_ID=your_telegram_chat_id
 ```

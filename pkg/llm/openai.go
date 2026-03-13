@@ -9,39 +9,38 @@ import (
 	"time"
 
 	"github.com/tmc/langchaingo/llms"
-	"github.com/tmc/langchaingo/llms/googleai"
+	"github.com/tmc/langchaingo/llms/openai"
 )
 
-// Client wraps the langchaingo Google AI client to implement retries and timeouts.
+// Client wraps the langchaingo OpenAI client to implement retries and timeouts.
 type Client struct {
-	model *googleai.GoogleAI
+	model *openai.LLM
 }
 
-// NewClient initializes a new Gemini 1.5 Flash client.
+// NewClient initializes a new OpenAI GPT-4o-mini client.
 func NewClient(ctx context.Context) (*Client, error) {
-	apiKey := os.Getenv("GEMINI_API_KEY")
+	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
-		return nil, errors.New("GEMINI_API_KEY environment variable is missing")
+		return nil, errors.New("OPENAI_API_KEY environment variable is missing")
 	}
 
-	model, err := googleai.New(
-		ctx,
-		googleai.WithAPIKey(apiKey),
-		googleai.WithDefaultModel("gemini-flash-latest"),
+	model, err := openai.New(
+		openai.WithToken(apiKey),
+		openai.WithModel("gpt-4o-mini"),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize Google AI model: %w", err)
+		return nil, fmt.Errorf("failed to initialize OpenAI model: %w", err)
 	}
 
-	slog.Info("LLM Client initialized", "model", "gemini-flash-latest", "version", "v1.0.6")
+	slog.Info("LLM Client initialized", "model", "gpt-4o-mini")
 
 	return &Client{
 		model: model,
 	}, nil
 }
 
-// GenerateContent generates a response using Gemini.
-// It wraps the call with a timeout and a simple retry logic to handle 429 rate limits.
+// GenerateContent generates a response using OpenAI.
+// It wraps the call with a timeout and a simple retry logic.
 func (c *Client) GenerateContent(ctx context.Context, messages []llms.MessageContent, opts ...llms.CallOption) (*llms.ContentResponse, error) {
 	maxRetries := 2
 	baseWait := 5 * time.Second
@@ -70,8 +69,7 @@ func (c *Client) GenerateContent(ctx context.Context, messages []llms.MessageCon
 	return nil, errors.New("unexpected error in retry loop")
 }
 
-// Model returns the underlying langchaingo googleai instance
-// This is useful if we need to pass it into direct langchaingo agent abstractions.
-func (c *Client) Model() *googleai.GoogleAI {
+// Model returns the underlying langchaingo openai instance
+func (c *Client) Model() *openai.LLM {
 	return c.model
 }

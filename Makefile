@@ -27,11 +27,11 @@ docker-build:
 
 docker-run:
 	@echo "Running Docker container..."
-	@if [ -z "$(GEMINI_API_KEY)" ]; then \
-		echo "GEMINI_API_KEY is not set. Please set it to run the container."; \
+	@if [ -z "$(OPENAI_API_KEY)" ]; then \
+		echo "OPENAI_API_KEY is not set. Please set it to run the container."; \
 		exit 1; \
 	fi
-	docker run -e GEMINI_API_KEY=$(GEMINI_API_KEY) --rm $(APP_NAME):latest
+	docker run -e OPENAI_API_KEY=$(OPENAI_API_KEY) --rm $(APP_NAME):latest
 
 lint:
 	@echo "Formatting code..."
